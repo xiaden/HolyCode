@@ -24,17 +24,6 @@ body:
     validations:
       required: true
 
-  - type: dropdown
-    id: variant
-    attributes:
-      label: Which variant?
-      description: Full includes everything, Slim is lightweight
-      options:
-        - Full only
-        - Both (full + slim)
-    validations:
-      required: true
-
   - type: textarea
     id: why
     attributes:

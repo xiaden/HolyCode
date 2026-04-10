@@ -53,15 +53,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Shell essentials
     git curl wget jq unzip zip tar tree less vim \
     # Search and navigation
-    ripgrep fd-find fzf bat \
+    ripgrep fd-find fzf bat bubblewrap \
     # Process and network
-    htop procps iproute2 lsof \
+    htop procps iproute2 lsof strace \
     # Build essentials (needed for native npm addons)
     build-essential pkg-config \
+    postgresql-client redis-tools sqlite3 \
     # SSH client (NOT server)
     openssh-client \
+    imagemagick \
+    fonts-inter \
     tmux \
     && rm -rf /var/lib/apt/lists/*
+
+RUN chmod u+s /usr/bin/bwrap
 
 # ---------- bat symlink (Debian names it batcat) ----------
 RUN ln -sf /usr/bin/batcat /usr/local/bin/bat 2>/dev/null || true
@@ -69,6 +74,10 @@ RUN ln -sf /usr/bin/batcat /usr/local/bin/bat 2>/dev/null || true
 # ---------- Python 3 (for user projects) ----------
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 python3-pip python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pandoc ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # ---------- GitHub CLI ----------
@@ -113,9 +122,43 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ---------- Playwright (Python, uses system Chromium via env vars) ----------
 RUN pip install --no-cache-dir --break-system-packages playwright
 
+RUN pip install --no-cache-dir --break-system-packages \
+    requests httpx beautifulsoup4 lxml \
+    Pillow openpyxl python-docx \
+    pandas numpy matplotlib seaborn \
+    rich click tqdm apprise \
+    jinja2 pyyaml python-dotenv markdown \
+    fastapi uvicorn
+
+RUN rm -f /usr/local/bin/dotenv
+
 # ---------- OpenCode (AI coding agent) ----------
 # Installed via npm as root (global install needs write access to /usr/local/lib)
 RUN npm i -g opencode-ai
+
+WORKDIR /workspace
+USER opencode
+RUN curl -fsSL https://claude.ai/install.sh | bash
+USER root
+ENV PATH="/home/opencode/.local/bin:${PATH}"
+
+RUN npm i -g \
+    typescript tsx \
+    pnpm \
+    vite esbuild \
+    eslint prettier \
+    serve nodemon concurrently \
+    dotenv-cli \
+    wrangler vercel netlify-cli \
+    pm2 \
+    prisma drizzle-kit \
+    lighthouse @lhci/cli \
+    sharp-cli json-server http-server
+
+RUN pip install --no-cache-dir --break-system-packages \
+    "hermes-agent[pty,mcp,messaging] @ git+https://github.com/NousResearch/hermes-agent.git@d618d30f670f600a013b7a38c420d194e24d7d04"
+
+RUN npm i -g paperclipai@2026.403.0
 
 # ---------- Copy config files ----------
 COPY scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
@@ -135,6 +178,12 @@ COPY s6-overlay/s6-rc.d/xvfb/type /etc/s6-overlay/s6-rc.d/xvfb/type
 COPY s6-overlay/s6-rc.d/xvfb/run /etc/s6-overlay/s6-rc.d/xvfb/run
 RUN chmod +x /etc/s6-overlay/s6-rc.d/xvfb/run && \
     touch /etc/s6-overlay/s6-rc.d/user/contents.d/xvfb
+
+COPY s6-overlay/s6-rc.d/hermes/type /etc/s6-overlay/s6-rc.d/hermes/type
+COPY s6-overlay/s6-rc.d/hermes/run /etc/s6-overlay/s6-rc.d/hermes/run
+COPY s6-overlay/s6-rc.d/paperclip/type /etc/s6-overlay/s6-rc.d/paperclip/type
+COPY s6-overlay/s6-rc.d/paperclip/run /etc/s6-overlay/s6-rc.d/paperclip/run
+RUN chmod +x /etc/s6-overlay/s6-rc.d/hermes/run /etc/s6-overlay/s6-rc.d/paperclip/run
 
 # ---------- Working directory ----------
 WORKDIR /workspace

@@ -2,7 +2,7 @@
 
 **One container. Every tool. Any provider.**
 
-OpenCode AI coding agent with built-in web UI, Claude subscription support, 30+ dev tools, headless browser, and multi-agent orchestration. Use your existing Claude Max/Pro plan. No separate API key needed.
+OpenCode AI coding agent with built-in web UI, Claude subscription support, 50+ dev tools, headless browser, and bundled Hermes + Paperclip integrations. Use your existing Claude Max/Pro plan. No separate API key needed.
 
 [![Docker Pulls](https://img.shields.io/docker/pulls/coderluii/holycode?style=flat-square&logo=docker)](https://hub.docker.com/r/coderluii/holycode)
 [![GitHub Stars](https://img.shields.io/github/stars/coderluii/holycode?style=flat-square&logo=github)](https://github.com/CoderLuii/HolyCode)
@@ -19,11 +19,15 @@ services:
     shm_size: 2g
     ports:
       - "4096:4096"
+      # - "3100:3100" # Paperclip dashboard
+      # - "8642:8642" # Hermes API server
     volumes:
       - ./data/opencode:/home/opencode
       - ./workspace:/workspace
     environment:
       - ANTHROPIC_API_KEY=your-key-here
+      # - ENABLE_PAPERCLIP=true
+      # - ENABLE_HERMES=true
 ```
 
 ```bash
@@ -43,7 +47,9 @@ That's it. Open your browser and start building.
 
 🌐 **Headless Browser** — Chromium + Xvfb + Playwright, pre-configured for screenshots, scraping, and browser automation.
 
-🛠️ **30+ Dev Tools** — Node.js 22, Python 3, git, ripgrep, fzf, bat, eza, lazygit, delta, gh CLI, tmux, and more.
+🛠️ **50+ Dev Tools** — Node.js 22, Python 3, git, ripgrep, fzf, bat, eza, lazygit, delta, gh CLI, pnpm, TypeScript, Prisma, and more.
+
+🧩 **Bundled Services** — Optional Hermes Agent on port 8642 and Paperclip on port 3100. Flip an env var, restart, and they come up beside OpenCode.
 
 🤝 **10+ AI Providers** — Anthropic, OpenAI, Gemini, Groq, AWS Bedrock, Azure OpenAI, Vertex AI, GitHub Models, Ollama, and any OpenAI-compatible endpoint.
 
@@ -64,11 +70,18 @@ That's it. Open your browser and start building.
 | `PUID` / `PGID` | Container user UID/GID (default: 1000) |
 | `ENABLE_CLAUDE_AUTH` | Use Claude subscription instead of API key |
 | `ENABLE_OH_MY_OPENAGENT` | Enable multi-agent orchestration |
+| `ENABLE_PAPERCLIP` | Start the Paperclip dashboard |
+| `PAPERCLIP_DEPLOYMENT_MODE` | Keep Paperclip in Docker-safe authenticated mode |
+| `ENABLE_HERMES` | Start Hermes API + messaging bridge |
 | `OPENCODE_SERVER_PASSWORD` | Protect web UI with basic auth |
+
+Paperclip defaults to `authenticated` mode inside HolyCode so it can bind to `0.0.0.0` and still pass upstream doctor checks in Docker.
+
+Hermes exposes an API service. A `404` from `/` is normal as long as the process is healthy and port `8642` is listening.
 
 ## Links
 
-- [GitHub](https://github.com/CoderLuii/HolyCode)
+- [GitHub](https://github.com/coderluii/holycode)
 - [HolyCode Page](https://holycode.coderluii.dev)
 - [HolyCode Cloud (early access)](https://holycode.coderluii.dev/cloud)
-- [Full Documentation](https://github.com/CoderLuii/HolyCode#readme)
+- [Full Documentation](https://github.com/coderluii/holycode#readme)

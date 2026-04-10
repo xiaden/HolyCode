@@ -10,6 +10,8 @@ services:
     shm_size: 2g
     ports:
       - "4096:4096"
+      # - "3100:3100"   # Paperclip dashboard
+      # - "8642:8642"   # Hermes API server
     volumes:
       - ./data/opencode:/home/opencode
       - ./local-cache/opencode:/home/opencode/.cache/opencode
@@ -17,4 +19,9 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      # - ENABLE_PAPERCLIP=true
+      # - PAPERCLIP_PORT=3100
+      # - PAPERCLIP_DEPLOYMENT_MODE=authenticated
+      # - ENABLE_HERMES=true
+      # - HERMES_PORT=8642

@@ -4,6 +4,29 @@ All notable changes to HolyCode will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.5] - 04/10/2026
+
+### Added
+
+- Add Hermes Agent as an optional bundled service with `ENABLE_HERMES`, persistent `~/.hermes` state, and an API surface on port `8642`
+- Add Paperclip as an optional bundled service with `ENABLE_PAPERCLIP`, persistent `~/.paperclip` state, and a local dashboard on port `3100`
+- Install Claude Code CLI in the image so the Claude Auth flow has the binary it expects
+- Expand the shipped toolset with TypeScript, pnpm, Prisma, Lighthouse, database CLIs, media tools, and Python utility packages
+- Add a pull-request validation workflow that builds the image and smoke-checks the OpenCode binary
+
+### Changed
+
+- Refresh the docs, translations, Docker Hub description, and landing page to reflect the new bundled services and the larger 50+ toolset
+- Extend the default compose and env examples with Hermes and Paperclip toggles
+
+### Fixed
+
+- Resolve the `python-dotenv` and `dotenv-cli` binary collision so the image builds cleanly
+- Switch Hermes to its foreground gateway runner and bootstrap Paperclip in a Docker-safe authenticated mode so both bundled services start correctly under s6-overlay
+- Remove shell-expanded Python config edits from `entrypoint.sh` by passing data into Python safely
+- Repair broken asset and LICENSE paths in the affected translated READMEs
+- Remove stale Slim-variant references from the package request issue template
+
 ## [1.0.4] - 04/04/2026
 
 ### Added

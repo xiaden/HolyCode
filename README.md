@@ -26,13 +26,17 @@
 
 ### One container. Every tool. Any provider.
 
-OpenCode running in a container with everything already installed. 30+ dev tools, 10+ AI providers, headless browser, persistent state. Drop it on any machine and pick up exactly where you left off.
+OpenCode running in a container with everything already installed. 50+ dev tools, 10+ AI providers, headless browser, persistent state, and two serious upgrades on top: Hermes Agent and Paperclip. Drop it on any machine and pick up exactly where you left off.
+
+**Hermes Agent turns HolyCode into a meta-agent runtime.** You get a smarter planning layer on top of OpenCode, an API surface on port `8642`, MCP support, messaging adapters, and a clean way to let a "brain" delegate code work into the local container instead of bolting that together yourself.
+
+**Paperclip turns HolyCode into an agent board.** You get a dashboard on port `3100` where you create a company, hire OpenCode-backed workers, wake them on heartbeat, and manage agent work from a real UI instead of hand-rolling scripts around `opencode run`.
 
 **Works with your Claude subscription.** Enable the Claude Auth plugin and use your existing Claude Max/Pro plan. No separate API key needed.
 
 **Multi-agent orchestration built in.** Enable oh-my-openagent and turn OpenCode into a coordinated agent system with parallel execution.
 
-**You were going to spend an hour getting your environment back. Or you could just `docker compose up`.**
+**You were going to spend an hour getting your environment back. Or you could just `docker compose up` and get a coding workstation, a meta-agent, and an agent board in one shot.**
 > **Don't want to self-host?** [HolyCode Cloud](https://holycode.coderluii.dev/cloud) is coming. Same tools, zero setup. Early access is free.
 
 ---
@@ -49,7 +53,7 @@ It wraps [OpenCode](https://opencode.ai), an AI coding agent with a built-in web
 
 It's the same idea as [HolyClaude](https://github.com/coderluii/holyclaude) but wrapping OpenCode instead of Claude Code. And here's the thing: OpenCode isn't locked to one provider. Point it at Anthropic, OpenAI, Google Gemini, Groq, AWS Bedrock, or Azure OpenAI. Same container, your choice of model.
 
-30+ dev tools, two language runtimes, a headless browser stack, and process supervision. All wired up, all ready on first boot. I've been running this on my own server. Every bug has been hit, diagnosed, and fixed.
+50+ dev tools, two language runtimes, a headless browser stack, process supervision, and two bundled orchestration layers. All wired up, all ready on first boot. I've been running this on my own server. Every bug has been hit, diagnosed, and fixed.
 
 You pull it. You run it. You open your browser. You build.
 
@@ -68,16 +72,17 @@ You pull it. You run it. You open your browser. You build.
 | 7 | [Docker Compose - Full](#-docker-compose---full) |
 | 8 | [Environment Variables](#-environment-variables) |
 | 9 | [What's Inside](#-whats-inside) |
-| 10 | [Architecture](#-architecture) |
-| 11 | [CLI Usage](#-cli-usage) |
-| 12 | [Data and Persistence](#-data-and-persistence) |
-| 13 | [Permissions](#-permissions) |
-| 14 | [Upgrading](#-upgrading) |
-| 15 | [Troubleshooting](#-troubleshooting) |
-| 16 | [Building Locally](#-building-locally) |
-| 17 | [Contributing](#-contributing) |
-| 18 | [Support](#-support) |
-| 19 | [License](#-license) |
+| 10 | [Bundled Services](#-bundled-services) |
+| 11 | [Architecture](#-architecture) |
+| 12 | [CLI Usage](#-cli-usage) |
+| 13 | [Data and Persistence](#-data-and-persistence) |
+| 14 | [Permissions](#-permissions) |
+| 15 | [Upgrading](#-upgrading) |
+| 16 | [Troubleshooting](#-troubleshooting) |
+| 17 | [Building Locally](#-building-locally) |
+| 18 | [Contributing](#-contributing) |
+| 19 | [Support](#-support) |
+| 20 | [License](#-license) |
 
 ---
 
@@ -136,7 +141,7 @@ Open http://localhost:4096. You're in.
 
 Don't want to self-host? We're building a managed version of HolyCode.
 
-Same 30+ tools. Same 10+ providers. Same persistent state. No Docker. No terminal. Just open your browser and code.
+Same 50+ tools. Same 10+ providers. Same persistent state. No Docker. No terminal. Just open your browser and code.
 
 **What you get with Cloud:**
 - Zero setup. No Docker, no config files, no terminal commands.
@@ -367,6 +372,12 @@ services:
 | `OPENCODE_SERVER_USERNAME` | `opencode` | Username for web UI basic auth |
 | `ENABLE_CLAUDE_AUTH` | (none) | Set to `true` to use Claude subscription instead of API key |
 | `ENABLE_OH_MY_OPENAGENT` | (none) | Set to `true` to enable multi-agent orchestration plugin |
+| `ENABLE_PAPERCLIP` | (none) | Set to `true` to start the Paperclip dashboard and agent board |
+| `PAPERCLIP_PORT` | `3100` | Override the container port used by Paperclip |
+| `PAPERCLIP_INSTANCE_ID` | `default` | Local Paperclip instance name for isolated state |
+| `PAPERCLIP_DEPLOYMENT_MODE` | `authenticated` | Docker-safe Paperclip startup mode; HolyCode defaults this away from `local_trusted` |
+| `ENABLE_HERMES` | (none) | Set to `true` to start Hermes as a bundled meta-agent API |
+| `HERMES_PORT` | `8642` | Override the container port used by Hermes |
 | `HOLYCODE_PLUGIN_UPDATE` | `manual` | Plugin update mode: `manual` (install if missing) or `auto` (install and update on boot) |
 
 > Plugin toggles (`ENABLE_CLAUDE_AUTH`, `ENABLE_OH_MY_OPENAGENT`) take effect on container restart. Set the env var and run `docker compose down && up -d`.
@@ -376,6 +387,14 @@ services:
 > `ENABLE_OH_MY_OPENAGENT=true` enables the plugin through the main OpenCode config at `/home/opencode/.config/opencode/opencode.json`. On the host, that file appears under whatever host path you bind to `/home/opencode`. On boot, HolyCode also checks whether the plugin package is missing and installs it if needed.
 
 > `ENABLE_OH_MY_OPENAGENT=true` enables the plugin and exposes the built-in `/oh-my-openagent-setup` skill. The skill only appears when the plugin is enabled. Use it to create or update the plugin-specific config file at `~/.config/opencode/oh-my-openagent.jsonc`.
+
+> `ENABLE_PAPERCLIP=true` starts Paperclip on port `3100` inside the container. Open the dashboard, create a company, then hire OpenCode-backed agents there. Paperclip persists under `~/.paperclip` automatically.
+
+> HolyCode forces `PAPERCLIP_DEPLOYMENT_MODE=authenticated` by default because Paperclip's upstream `local_trusted` mode only allows loopback binding. In Docker, that would block port publishing on `0.0.0.0`.
+
+> `ENABLE_HERMES=true` starts Hermes on port `8642` inside the container. Hermes persists under `~/.hermes`, uses the already-installed `opencode` binary, and can expose an OpenAI-compatible API while delegating code work back into HolyCode.
+
+> Hermes is an API service, not a landing page. A `404` at `http://localhost:8642/` is expected. The important signal is that the port is listening and the process stays healthy.
 
 > `GIT_USER_NAME` and `GIT_USER_EMAIL` are only applied on first boot. To re-apply, delete the sentinel file and restart: `docker exec holycode rm /home/opencode/.config/opencode/.holycode-bootstrapped` then `docker compose restart`.
 
@@ -457,6 +476,17 @@ Includes Liberation, DejaVu, Noto, and Noto Color Emoji fonts for correct page r
 </details>
 
 <details>
+<summary><strong>Bundled services</strong></summary>
+
+| Service | Purpose |
+|---------|---------|
+| Hermes Agent | Self-improving meta-agent with MCP, messaging adapters, and OpenCode delegation |
+| Paperclip | Local agent board that hires OpenCode workers and wakes them on heartbeat |
+| Claude Code CLI | Installed for Claude subscription auth flows via `ENABLE_CLAUDE_AUTH` |
+
+</details>
+
+<details>
 <summary><strong>Process management</strong></summary>
 
 | Component | Purpose |
@@ -474,19 +504,83 @@ s6-overlay supervises OpenCode and Xvfb. If a process crashes, it restarts autom
 
 ---
 
+## 🧩 Bundled Services
+
+HolyCode now ships with two optional layers on top of OpenCode. You do **not** need them to use the container. But if plain OpenCode gives you the hands, these two give you a brain and a control room.
+
+- **Hermes Agent** is for when you want a smarter coordinator sitting above OpenCode.
+- **Paperclip** is for when you want a board, a workflow, and actual agent management instead of just one-off prompts.
+
+Flip the env var, restart the container, and the service comes up alongside the normal web UI.
+
+### Hermes Agent
+
+Hermes is the "smarter brain" option. It runs as a bundled meta-agent, exposes an API service on port `8642`, and delegates coding work by calling the local `opencode` binary that HolyCode already ships.
+
+Why that matters:
+
+- **Planning above execution.** OpenCode does the hands-on coding. Hermes gives you a layer that can reason, coordinate, and delegate down into that local worker.
+- **API-ready agent runtime.** You can point other tooling at Hermes instead of wiring your own service around OpenCode.
+- **MCP and messaging in the same box.** HolyCode already solves the dev-environment side. Hermes adds the "agent platform" layer on top.
+- **Persistent agent state.** Its data lives under `~/.hermes`, so rebuilds don't wipe the runtime you just configured.
+
+If you want HolyCode to feel less like "a container with a coding tool" and more like "an AI runtime you can build systems on top of," Hermes is the part that changes that.
+
+Turn it on with:
+
+```yaml
+environment:
+  - ENABLE_HERMES=true
+  - HERMES_PORT=8642
+```
+
+Hermes state lives under `/home/opencode/.hermes`, so it follows the same persistence story as the rest of HolyCode.
+
+### Paperclip
+
+Paperclip is the "agent board" option. It gives you a local dashboard on port `3100` where you create a company, hire agents, and let those agents wake up on schedule. Under the hood it spawns `opencode run` processes, so the workers are still HolyCode.
+
+Why that matters:
+
+- **A real control surface.** You stop treating agents like random shell commands and start treating them like a team with roles, tasks, and wake cycles.
+- **OpenCode-backed workers, not a toy layer.** The board is Paperclip. The actual worker execution is still HolyCode doing real coding work.
+- **Faster delegation experiments.** Create a company, assign work, and see how an agent workflow feels without building the orchestration stack yourself.
+- **Persistent board state.** Data, config, storage, and embedded Postgres all live under `~/.paperclip`.
+
+If Hermes is the brain, Paperclip is the control room. It's the thing you turn on when you want to manage agent work, not just launch it.
+
+Turn it on with:
+
+```yaml
+environment:
+  - ENABLE_PAPERCLIP=true
+  - PAPERCLIP_PORT=3100
+  - PAPERCLIP_DEPLOYMENT_MODE=authenticated
+```
+
+Paperclip state lives under `/home/opencode/.paperclip`. HolyCode bootstraps it in `authenticated` mode so Docker port publishing works cleanly. Open the dashboard, set up your company, and hire OpenCode-backed employees from there.
+
+<p align="right">
+  <a href="#top">back to top</a>
+</p>
+
+---
+
 ## 🏗 Architecture
 
 ```mermaid
 graph TD
     A[docker compose up -d] --> B[entrypoint.sh]
     B --> C[UID/GID Remap]
-    C --> D[Plugin Toggles]
+    C --> D[Plugin and Service Toggles]
     D --> E{First Boot?}
     E -->|Yes| F[bootstrap.sh]
     E -->|No| G[s6-overlay /init]
     F --> G
     G --> H[Xvfb :99]
     G --> I[opencode web :4096]
+    G --> Q[Hermes API :8642]
+    G --> R[Paperclip UI :3100]
     I --> J[Web UI]
     J --> K[Your Browser]
     I --> L[CLI Access]
@@ -494,9 +588,11 @@ graph TD
     M --> N[opencode TUI]
     M --> O[opencode run 'message']
     M --> P[opencode attach localhost:4096]
+    Q --> S[Meta-agent API clients]
+    R --> T[Agent board and CEO invite]
 ```
 
-The entrypoint handles user remapping, plugin toggles, and first-boot setup. s6-overlay supervises both Xvfb (headless display) and the OpenCode web server. If either crashes, s6 restarts it automatically. Access the web UI at port 4096 or exec into the container for the full CLI experience.
+The entrypoint handles user remapping, plugin toggles, optional bundled-service toggles, and first-boot setup. s6-overlay supervises Xvfb, the OpenCode web server, and any optional bundled services you enabled. If a supervised process crashes, s6 restarts it automatically. Access the web UI at port 4096, Hermes on 8642, or Paperclip on 3100 when those services are enabled.
 
 <p align="right">
   <a href="#top">back to top</a>

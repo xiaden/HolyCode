@@ -133,19 +133,22 @@ check_cifs_compatibility() {
     local test_db
     test_db=$(mktemp "${OC_HOME}/.holycode-wal-test-XXXXXX.db" 2>/dev/null) || return 0
 
-    if python3 -c "
+    if python3 - "$test_db" 2>/dev/null <<'PY'; then
 import sqlite3
-db = sqlite3.connect('${test_db}')
+import sys
+
+db_path = sys.argv[1]
+db = sqlite3.connect(db_path)
 db.execute('PRAGMA journal_mode=WAL')
 db.execute('CREATE TABLE _t (id INTEGER)')
 db.execute('INSERT INTO _t VALUES (1)')
 db.commit()
-db2 = sqlite3.connect('${test_db}')
+db2 = sqlite3.connect(db_path)
 db2.execute('SELECT * FROM _t').fetchall()
 db2.close()
 db.execute('PRAGMA journal_mode=DELETE')
 db.close()
-" 2>/dev/null; then
+PY
         rm -f "$test_db" "${test_db}-wal" "${test_db}-shm" 2>/dev/null || true
         return 0
     fi
@@ -174,64 +177,110 @@ fi
 
 sync_shipped_skills
 
+if [ "${ENABLE_HERMES}" = "true" ]; then
+    export HERMES_HOME="${HERMES_HOME:-$OC_HOME/.hermes}"
+    mkdir -p "$HERMES_HOME"
+    chown "$PUID:$PGID" "$HERMES_HOME" 2>/dev/null || true
+    touch /etc/s6-overlay/s6-rc.d/user/contents.d/hermes
+else
+    rm -f /etc/s6-overlay/s6-rc.d/user/contents.d/hermes
+fi
+
+if [ "${ENABLE_PAPERCLIP}" = "true" ]; then
+    export PAPERCLIP_HOME="${PAPERCLIP_HOME:-$OC_HOME/.paperclip}"
+    mkdir -p "$PAPERCLIP_HOME"
+    chown "$PUID:$PGID" "$PAPERCLIP_HOME" 2>/dev/null || true
+    touch /etc/s6-overlay/s6-rc.d/user/contents.d/paperclip
+else
+    rm -f /etc/s6-overlay/s6-rc.d/user/contents.d/paperclip
+fi
+
 # ---------- Plugin toggles (run every boot for enable/disable) ----------
 CONFIG_FILE="$OC_HOME/.config/opencode/opencode.json"
 if [ -f "$CONFIG_FILE" ]; then
     # Claude Auth plugin
     if [ "${ENABLE_CLAUDE_AUTH}" = "true" ]; then
         if ! grep -q "opencode-claude-auth" "$CONFIG_FILE" 2>/dev/null; then
-            runuser -u "$OC_USER" -- python3 -c "
+            runuser -u "$OC_USER" -- python3 - "$CONFIG_FILE" "opencode-claude-auth" 2>/dev/null <<'PY' && echo "[entrypoint] Claude Auth plugin enabled"
 import json
-with open('$CONFIG_FILE', 'r') as f:
+import sys
+
+config_file = sys.argv[1]
+plugin_name = sys.argv[2]
+
+with open(config_file, 'r', encoding='utf-8') as f:
     config = json.load(f)
+
 config.setdefault('plugin', [])
-if 'opencode-claude-auth' not in config['plugin']:
-    config['plugin'].append('opencode-claude-auth')
-with open('$CONFIG_FILE', 'w') as f:
+if plugin_name not in config['plugin']:
+    config['plugin'].append(plugin_name)
+
+with open(config_file, 'w', encoding='utf-8') as f:
     json.dump(config, f, indent=2)
-" 2>/dev/null && echo "[entrypoint] Claude Auth plugin enabled"
+PY
         fi
         ensure_plugin_installed "opencode-claude-auth"
     else
         if grep -q "opencode-claude-auth" "$CONFIG_FILE" 2>/dev/null; then
-            runuser -u "$OC_USER" -- python3 -c "
+            runuser -u "$OC_USER" -- python3 - "$CONFIG_FILE" "opencode-claude-auth" 2>/dev/null <<'PY' && echo "[entrypoint] Claude Auth plugin disabled"
 import json
-with open('$CONFIG_FILE', 'r') as f:
+import sys
+
+config_file = sys.argv[1]
+plugin_name = sys.argv[2]
+
+with open(config_file, 'r', encoding='utf-8') as f:
     config = json.load(f)
-if 'plugin' in config and 'opencode-claude-auth' in config['plugin']:
-    config['plugin'].remove('opencode-claude-auth')
-with open('$CONFIG_FILE', 'w') as f:
+
+if 'plugin' in config and plugin_name in config['plugin']:
+    config['plugin'].remove(plugin_name)
+
+with open(config_file, 'w', encoding='utf-8') as f:
     json.dump(config, f, indent=2)
-" 2>/dev/null && echo "[entrypoint] Claude Auth plugin disabled"
+PY
         fi
     fi
 
     # oh-my-openagent plugin
     if [ "${ENABLE_OH_MY_OPENAGENT}" = "true" ]; then
         if ! grep -q "oh-my-openagent" "$CONFIG_FILE" 2>/dev/null; then
-            runuser -u "$OC_USER" -- python3 -c "
+            runuser -u "$OC_USER" -- python3 - "$CONFIG_FILE" "oh-my-openagent" 2>/dev/null <<'PY' && echo "[entrypoint] oh-my-openagent plugin enabled"
 import json
-with open('$CONFIG_FILE', 'r') as f:
+import sys
+
+config_file = sys.argv[1]
+plugin_name = sys.argv[2]
+
+with open(config_file, 'r', encoding='utf-8') as f:
     config = json.load(f)
+
 config.setdefault('plugin', [])
-if 'oh-my-openagent' not in config['plugin']:
-    config['plugin'].append('oh-my-openagent')
-with open('$CONFIG_FILE', 'w') as f:
+if plugin_name not in config['plugin']:
+    config['plugin'].append(plugin_name)
+
+with open(config_file, 'w', encoding='utf-8') as f:
     json.dump(config, f, indent=2)
-" 2>/dev/null && echo "[entrypoint] oh-my-openagent plugin enabled"
+PY
         fi
         ensure_plugin_installed "oh-my-openagent"
     else
         if grep -q "oh-my-openagent" "$CONFIG_FILE" 2>/dev/null; then
-            runuser -u "$OC_USER" -- python3 -c "
+            runuser -u "$OC_USER" -- python3 - "$CONFIG_FILE" "oh-my-openagent" 2>/dev/null <<'PY' && echo "[entrypoint] oh-my-openagent plugin disabled"
 import json
-with open('$CONFIG_FILE', 'r') as f:
+import sys
+
+config_file = sys.argv[1]
+plugin_name = sys.argv[2]
+
+with open(config_file, 'r', encoding='utf-8') as f:
     config = json.load(f)
-if 'plugin' in config and 'oh-my-openagent' in config['plugin']:
-    config['plugin'].remove('oh-my-openagent')
-with open('$CONFIG_FILE', 'w') as f:
+
+if 'plugin' in config and plugin_name in config['plugin']:
+    config['plugin'].remove(plugin_name)
+
+with open(config_file, 'w', encoding='utf-8') as f:
     json.dump(config, f, indent=2)
-" 2>/dev/null && echo "[entrypoint] oh-my-openagent plugin disabled"
+PY
         fi
     fi
 fi

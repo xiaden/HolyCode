@@ -26,9 +26,14 @@
 
 ### Un conteneur. Tous les outils. N'importe quel fournisseur.
 
-OpenCode s'exécutant dans un conteneur avec tout déjà installé. Déposez-le sur n'importe quelle machine et reprenez exactement là où vous vous étiez arrêté. Configurez-le une fois, emportez-le partout. Sans reconstruire des environnements, sans chercher des outils installés il y a six mois.
+OpenCode s'exécutant dans un conteneur avec tout déjà installé. 50+ outils de développement, 10+ fournisseurs IA, navigateur sans affichage, état persistant. Déposez-le sur n'importe quelle machine et reprenez exactement là où vous vous étiez arrêté.
+
+**Fonctionne avec votre abonnement Claude.** Activez le plugin Claude Auth et utilisez votre plan Claude Max/Pro existant. Pas besoin de clé API séparée.
+
+**Orchestration multi-agents intégrée.** Activez oh-my-openagent et transformez OpenCode en un système d'agents coordonnés avec exécution parallèle.
 
 **Vous alliez passer une heure à remettre votre environnement en place. Ou vous pouvez simplement faire `docker compose up`.**
+> **Vous ne voulez pas héberger vous-même ?** [HolyCode Cloud](https://holycode.coderluii.dev/cloud) arrive. Les mêmes outils, zéro configuration. L'accès anticipé est gratuit.
 
 ---
 
@@ -63,16 +68,17 @@ Vous le téléchargez. Vous le lancez. Vous ouvrez votre navigateur. Vous codez.
 | 7 | [Docker Compose - Complet](#-docker-compose---complet) |
 | 8 | [Variables d'environnement](#-variables-denvironnement) |
 | 9 | [Ce qui est inclus](#-ce-qui-est-inclus) |
-| 10 | [Architecture](#-architecture) |
-| 11 | [Utilisation CLI](#-utilisation-cli) |
-| 12 | [Données et persistance](#-données-et-persistance) |
-| 13 | [Permissions](#-permissions) |
-| 14 | [Mises à jour](#-mises-à-jour) |
-| 15 | [Dépannage](#-dépannage) |
-| 16 | [Compilation locale](#-compilation-locale) |
-| 17 | [Contribuer](#-contribuer) |
-| 18 | [Support](#-support) |
-| 19 | [Licence](#-licence) |
+| 10 | [Services intégrés](#-services-intégrés) |
+| 11 | [Architecture](#-architecture) |
+| 12 | [Utilisation CLI](#-utilisation-cli) |
+| 13 | [Données et persistance](#-données-et-persistance) |
+| 14 | [Permissions](#-permissions) |
+| 15 | [Mises à jour](#-mises-à-jour) |
+| 16 | [Dépannage](#-dépannage) |
+| 17 | [Compilation locale](#-compilation-locale) |
+| 18 | [Contribuer](#-contribuer) |
+| 19 | [Support](#-support) |
+| 20 | [Licence](#-licence) |
 
 ---
 
@@ -126,7 +132,7 @@ Ouvrez http://localhost:4096. Vous êtes prêt.
 
 Vous ne voulez pas héberger vous-même ? Nous construisons une version gérée de HolyCode.
 
-Les mêmes 30+ outils. Les mêmes 10+ fournisseurs. Le même état persistant. Sans Docker. Sans terminal. Ouvrez simplement votre navigateur et codez.
+Les mêmes 50+ outils. Les mêmes 10+ fournisseurs. Le même état persistant. Sans Docker. Sans terminal. Ouvrez simplement votre navigateur et codez.
 
 **Ce que vous obtenez avec Cloud :**
 - Configuration zéro. Pas de Docker, pas de fichiers de config, pas de commandes terminal.
@@ -355,8 +361,24 @@ services:
 | `OPENCODE_SERVER_USERNAME` | `opencode` | Nom d'utilisateur pour l'authentification basique de l'interface web |
 | `ENABLE_CLAUDE_AUTH` | (aucune) | Définissez sur `true` pour utiliser l'abonnement Claude plutôt qu'une clé API |
 | `ENABLE_OH_MY_OPENAGENT` | (aucune) | Définissez sur `true` pour activer le plugin d'orchestration multi-agents |
+| `ENABLE_PAPERCLIP` | (aucune) | Définissez sur `true` pour démarrer le tableau de bord et le tableau d'agents Paperclip |
+| `PAPERCLIP_PORT` | `3100` | Remplace le port du conteneur utilisé par Paperclip |
+| `PAPERCLIP_INSTANCE_ID` | `default` | Nom d'instance Paperclip locale pour un état isolé |
+| `ENABLE_HERMES` | (aucune) | Définissez sur `true` pour démarrer Hermes comme API de méta-agent intégrée |
+| `HERMES_PORT` | `8642` | Remplace le port du conteneur utilisé par Hermes |
+| `HOLYCODE_PLUGIN_UPDATE` | `manual` | Mode de mise à jour des plugins : `manual` (installe si manquant) ou `auto` (installe et met à jour au démarrage) |
 
 > Les bascules de plugins (`ENABLE_CLAUDE_AUTH`, `ENABLE_OH_MY_OPENAGENT`) prennent effet au redémarrage du conteneur. Définissez la variable d'environnement et exécutez `docker compose down && up -d`.
+
+> `HOLYCODE_PLUGIN_UPDATE` contrôle les mises à jour des packages de plugins. `manual` (par défaut) installe les plugins activés uniquement s'ils sont manquants. `auto` installe les plugins manquants et met à jour les plugins activés à chaque démarrage. Ceci est distinct de `OPENCODE_DISABLE_AUTOUPDATE`, qui n'affecte qu'OpenCode.
+
+> `ENABLE_OH_MY_OPENAGENT=true` active le plugin et expose la compétence intégrée `/oh-my-openagent-setup`. La compétence n'apparaît que lorsque le plugin est activé. Utilisez-la pour créer ou mettre à jour le fichier de configuration spécifique au plugin dans `~/.config/opencode/oh-my-openagent.jsonc`.
+
+> La politique de sélecteur par défaut de HolyCode est : visibles : `sisyphus`, `hephaestus`, `prometheus`, `atlas` ; sous-agents cachés : `oracle`, `librarian`, `explore`, `metis`, `momus`, `multimodal-looker`, `sisyphus-junior`. Si vous ajoutez un nouveau fournisseur et que le modèle visible par défaut semble obsolète, relancez `/oh-my-openagent-setup`, puis exécutez : `docker exec -it holycode bash -c "bunx oh-my-opencode doctor"` et `docker exec -it holycode bash -c "bunx oh-my-opencode refresh-model-capabilities"`.
+
+> `ENABLE_PAPERCLIP=true` démarre Paperclip sur le port `3100` dans le conteneur. Ouvrez le tableau de bord, créez une entreprise, puis engagez des agents OpenCode depuis là. Paperclip persiste sous `~/.paperclip` automatiquement.
+
+> `ENABLE_HERMES=true` démarre Hermes sur le port `8642` dans le conteneur. Hermes persiste sous `~/.hermes`, utilise le binaire `opencode` déjà installé et peut exposer une API compatible OpenAI tout en déléguant le travail de code à HolyCode.
 
 > `GIT_USER_NAME` et `GIT_USER_EMAIL` ne sont appliqués qu'au premier démarrage. Pour les réappliquer, supprimez le fichier sentinelle et redémarrez : `docker exec holycode rm /home/opencode/.config/opencode/.holycode-bootstrapped` puis `docker compose restart`.
 
@@ -438,6 +460,17 @@ Inclut les polices Liberation, DejaVu, Noto et Noto Color Emoji pour un rendu co
 </details>
 
 <details>
+<summary><strong>Services intégrés</strong></summary>
+
+| Service | Rôle |
+|---------|---------|
+| Hermes Agent | Méta-agent auto-améliorant avec MCP, adaptateurs de messagerie et délégation OpenCode |
+| Paperclip | Tableau d'agents local qui engage des travailleurs OpenCode et les réveille sur battement |
+| Claude Code CLI | Installé pour les flux d'authentification par abonnement Claude via `ENABLE_CLAUDE_AUTH` |
+
+</details>
+
+<details>
 <summary><strong>Gestion des processus</strong></summary>
 
 | Composant | Rôle |
@@ -448,6 +481,44 @@ Inclut les polices Liberation, DejaVu, Noto et Noto Color Emoji pour un rendu co
 s6-overlay supervise OpenCode et Xvfb. Si un processus plante, il redémarre automatiquement. Les politiques de redémarrage du conteneur restent propres car le superviseur le gère en interne.
 
 </details>
+
+<p align="right">
+  <a href="#top">retour en haut</a>
+</p>
+
+---
+
+## 🧩 Services intégrés
+
+HolyCode est maintenant livré avec deux couches optionnelles au-dessus d'OpenCode. Vous **n'en avez pas besoin** pour utiliser le conteneur. Activez la variable d'environnement, redémarrez le conteneur et le service démarre aux côtés de l'interface web normale.
+
+### Hermes Agent
+
+Hermes est l'option "cerveau plus intelligent". Il fonctionne comme un méta-agent intégré, expose une API compatible OpenAI sur le port `8642` et délègue le travail de code en appelant le binaire `opencode` local que HolyCode fournit déjà.
+
+Activez-le avec :
+
+```yaml
+environment:
+  - ENABLE_HERMES=true
+  - HERMES_PORT=8642
+```
+
+L'état de Hermes vit sous `/home/opencode/.hermes`, suivant la même histoire de persistance que le reste de HolyCode.
+
+### Paperclip
+
+Paperclip est l'option "tableau d'agents". Il vous donne un tableau de bord local sur le port `3100` où vous créez une entreprise, engagez des agents et laissez ces agents se réveiller selon un calendrier. En coulisses, il lance des processus `opencode run`, donc les travailleurs sont toujours HolyCode.
+
+Activez-le avec :
+
+```yaml
+environment:
+  - ENABLE_PAPERCLIP=true
+  - PAPERCLIP_PORT=3100
+```
+
+L'état de Paperclip vit sous `/home/opencode/.paperclip`. Ouvrez le tableau de bord, configurez votre entreprise et engagez des employés OpenCode depuis là.
 
 <p align="right">
   <a href="#top">retour en haut</a>
@@ -477,7 +548,7 @@ graph TD
     M --> P[opencode attach localhost:4096]
 ```
 
-Le point d'entrée gère le remappage des utilisateurs, les bascules de plugins et la configuration au premier démarrage. s6-overlay supervise à la fois Xvfb (affichage sans écran) et le serveur web OpenCode. En cas de crash, s6 les redémarre automatiquement. Accédez à l'interface web sur le port 4096 ou exécutez des commandes dans le conteneur pour l'expérience CLI complète.
+Le point d'entrée gère le remappage des utilisateurs, les bascules de plugins, les bascules de services intégrés optionnels et la configuration au premier démarrage. s6-overlay supervise Xvfb, le serveur web OpenCode et tous les services intégrés optionnels activés. En cas de crash d'un processus supervisé, s6 le redémarre automatiquement. Accédez à l'interface web sur le port 4096 ou exécutez des commandes dans le conteneur pour l'expérience CLI complète.
 
 <p align="right">
   <a href="#top">retour en haut</a>
@@ -525,6 +596,21 @@ docker exec -it holycode bash -c "opencode providers list"
 docker exec -it holycode bash -c "opencode providers login"
 ```
 
+### Configuration et reconfiguration de oh-my-openagent
+
+Si vous avez activé `ENABLE_OH_MY_OPENAGENT=true`, la compétence `/oh-my-openagent-setup` devient disponible. Utilisez-la pour créer ou actualiser la configuration spécifique au plugin :
+
+```text
+/oh-my-openagent-setup
+```
+
+Si vous ajoutez un nouveau fournisseur et que le modèle visible par défaut semble obsolète, relancez `/oh-my-openagent-setup`, puis :
+
+```bash
+docker exec -it holycode bash -c "bunx oh-my-opencode doctor"
+docker exec -it holycode bash -c "bunx oh-my-opencode refresh-model-capabilities"
+```
+
 ### Commandes utiles
 
 | Commande | Ce qu'elle fait |
@@ -536,6 +622,8 @@ docker exec -it holycode bash -c "opencode providers login"
 | `opencode serve` | Serveur API sans affichage |
 | `opencode providers list` | Affiche les fournisseurs configurés |
 | `opencode providers login` | Ajoute ou change de fournisseur |
+| `bunx oh-my-opencode doctor` | Diagnostique la configuration oh-my-openagent et la résolution de modèles |
+| `bunx oh-my-opencode refresh-model-capabilities` | Actualise le cache de capacités fournisseur/modèle |
 | `opencode models` | Liste les modèles disponibles |
 | `opencode models <provider>` | Liste les modèles pour un fournisseur spécifique |
 | `opencode stats` | Affiche l'utilisation des tokens et les coûts |
