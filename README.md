@@ -70,19 +70,20 @@ You pull it. You run it. You open your browser. You build.
 | 5 | [Provider Support](#-provider-support) |
 | 6 | [Docker Compose - Quick](#-docker-compose---quick) |
 | 7 | [Docker Compose - Full](#-docker-compose---full) |
-| 8 | [Environment Variables](#-environment-variables) |
-| 9 | [What's Inside](#-whats-inside) |
-| 10 | [Bundled Services](#-bundled-services) |
-| 11 | [Architecture](#-architecture) |
-| 12 | [CLI Usage](#-cli-usage) |
-| 13 | [Data and Persistence](#-data-and-persistence) |
-| 14 | [Permissions](#-permissions) |
-| 15 | [Upgrading](#-upgrading) |
-| 16 | [Troubleshooting](#-troubleshooting) |
-| 17 | [Building Locally](#-building-locally) |
-| 18 | [Contributing](#-contributing) |
-| 19 | [Support](#-support) |
-| 20 | [License](#-license) |
+| 8 | [Podman](#-podman) |
+| 9 | [Environment Variables](#-environment-variables) |
+| 10 | [What's Inside](#-whats-inside) |
+| 11 | [Bundled Services](#-bundled-services) |
+| 12 | [Architecture](#-architecture) |
+| 13 | [CLI Usage](#-cli-usage) |
+| 14 | [Data and Persistence](#-data-and-persistence) |
+| 15 | [Permissions](#-permissions) |
+| 16 | [Upgrading](#-upgrading) |
+| 17 | [Troubleshooting](#-troubleshooting) |
+| 18 | [Building Locally](#-building-locally) |
+| 19 | [Contributing](#-contributing) |
+| 20 | [Support](#-support) |
+| 21 | [License](#-license) |
 
 ---
 
@@ -343,6 +344,18 @@ docker compose -f docker-compose.full.yaml --profile cliproxyapi up -d
 ```
 
 HolyCode reaches that sidecar at `http://cliproxyapi:8317/v1` inside the Compose network. The sidecar is disabled by default and does not replace Claude Auth.
+
+<p align="right">
+  <a href="#top">back to top</a>
+</p>
+
+---
+
+## 🐳 Podman
+
+Prefer Podman? HolyCode uses the same container image there too. The Podman guide covers the minimal `podman run` setup, env-file usage, SELinux labels, rootless permissions, and update/recreate behavior.
+
+**[Read the Podman guide](docs/podman.md)**
 
 <p align="right">
   <a href="#top">back to top</a>
