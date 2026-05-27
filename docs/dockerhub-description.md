@@ -28,6 +28,7 @@ services:
     environment:
       - ANTHROPIC_API_KEY=your-key-here
       # - ENABLE_PAPERCLIP=true
+      # - PAPERCLIP_ALLOWED_HOSTNAMES=192.168.1.50,my-host.local
       # - ENABLE_HERMES=true
 ```
 
@@ -73,6 +74,7 @@ That's it. Open your browser and start building.
 | `ENABLE_OH_MY_OPENAGENT` | Enable multi-agent orchestration |
 | `ENABLE_PAPERCLIP` | Start the Paperclip dashboard |
 | `PAPERCLIP_DEPLOYMENT_MODE` | Keep Paperclip in Docker-safe authenticated mode |
+| `PAPERCLIP_ALLOWED_HOSTNAMES` | Allow comma-separated Paperclip remote hostnames/IPs, without scheme or port |
 | `ENABLE_HERMES` | Start Hermes API + messaging bridge |
 | `CLIPROXYAPI_ENABLED` | Add optional OpenCode `cliproxyapi` provider for a CLIProxyAPI sidecar |
 | `CLIPROXYAPI_BASE_URL` | CLIProxyAPI base URL, usually `http://cliproxyapi:8317/v1` in full Compose |
@@ -81,6 +83,8 @@ That's it. Open your browser and start building.
 | `OPENCODE_SERVER_PASSWORD` | Protect web UI with basic auth |
 
 Paperclip defaults to `authenticated` mode inside HolyCode so it can bind to `0.0.0.0` and still pass upstream doctor checks in Docker.
+
+Set `PAPERCLIP_ALLOWED_HOSTNAMES` only for trusted LAN/private hostnames or IPs. Restart after changing it; hostname guard and authentication remain enabled.
 
 Hermes exposes an API service. A `404` from `/` is normal as long as the process is healthy and port `8642` is listening.
 

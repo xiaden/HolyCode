@@ -384,6 +384,7 @@ HolyCode reaches that sidecar at `http://cliproxyapi:8317/v1` inside the Compose
 | `PAPERCLIP_PORT` | `3100` | Override the container port used by Paperclip |
 | `PAPERCLIP_INSTANCE_ID` | `default` | Local Paperclip instance name for isolated state |
 | `PAPERCLIP_DEPLOYMENT_MODE` | `authenticated` | Docker-safe Paperclip startup mode; HolyCode defaults this away from `local_trusted` |
+| `PAPERCLIP_ALLOWED_HOSTNAMES` | (none) | Comma-separated Paperclip remote hostnames/IPs to allow; use hostname/IP only, no scheme or port |
 | `ENABLE_HERMES` | (none) | Set to `true` to start Hermes as a bundled meta-agent API |
 | `HERMES_PORT` | `8642` | Override the container port used by Hermes |
 | `CLIPROXYAPI_ENABLED` | (none) | Set to `true` to add the optional OpenCode `cliproxyapi` provider |
@@ -404,6 +405,8 @@ HolyCode reaches that sidecar at `http://cliproxyapi:8317/v1` inside the Compose
 > `ENABLE_PAPERCLIP=true` starts Paperclip on port `3100` inside the container. Open the dashboard, create a company, then hire OpenCode-backed agents there. Paperclip persists under `~/.paperclip` automatically.
 
 > HolyCode forces `PAPERCLIP_DEPLOYMENT_MODE=authenticated` by default because Paperclip's upstream `local_trusted` mode only allows loopback binding. In Docker, that would block port publishing on `0.0.0.0`.
+
+> `PAPERCLIP_ALLOWED_HOSTNAMES` lets Paperclip accept listed LAN/private hostnames or IPs. Use comma-separated hostname/IP values only, without `http://`, `https://`, or ports. Restart the container after changing it. The hostname guard and Paperclip authentication stay enabled.
 
 > `ENABLE_HERMES=true` starts Hermes on port `8642` inside the container. Hermes persists under `~/.hermes`, uses the already-installed `opencode` binary, and can expose an OpenAI-compatible API while delegating code work back into HolyCode.
 
@@ -575,9 +578,12 @@ environment:
   - ENABLE_PAPERCLIP=true
   - PAPERCLIP_PORT=3100
   - PAPERCLIP_DEPLOYMENT_MODE=authenticated
+  - PAPERCLIP_ALLOWED_HOSTNAMES=192.168.1.50,my-host.local
 ```
 
 Paperclip state lives under `/home/opencode/.paperclip`. HolyCode bootstraps it in `authenticated` mode so Docker port publishing works cleanly. Open the dashboard, set up your company, and hire OpenCode-backed employees from there.
+
+When opening Paperclip from another machine, set `PAPERCLIP_ALLOWED_HOSTNAMES` to the hostname or IP from the browser URL, without `http://`, `https://`, or `:3100`. Use commas for multiple values and restart the container after changes. This only allowlists those private hostnames; it does not make Paperclip public or disable authentication.
 
 ### CLIProxyAPI
 
