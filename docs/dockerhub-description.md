@@ -2,7 +2,7 @@
 
 **One container. Every tool. Any provider.**
 
-OpenCode AI coding agent with built-in web UI, Claude subscription support, 50+ dev tools, headless browser, and bundled Hermes + Paperclip integrations. Use your existing Claude Max/Pro plan. No separate API key needed.
+OpenCode AI coding agent with built-in web UI, Claude subscription support, 50+ dev tools, headless browser, bundled Hermes + Paperclip integrations, and optional CLIProxyAPI sidecar support. Use your existing Claude Max/Pro plan. No separate API key needed.
 
 [![Docker Pulls](https://img.shields.io/docker/pulls/coderluii/holycode?style=flat-square&logo=docker)](https://hub.docker.com/r/coderluii/holycode)
 [![GitHub Stars](https://img.shields.io/github/stars/coderluii/holycode?style=flat-square&logo=github)](https://github.com/CoderLuii/HolyCode)
@@ -50,7 +50,7 @@ That's it. Open your browser and start building.
 
 🛠️ **50+ Dev Tools** — Node.js 22, Python 3, git, ripgrep, fzf, bat, eza, lazygit, delta, gh CLI, pnpm, TypeScript, Prisma, and more.
 
-🧩 **Bundled Services** — Optional Hermes Agent on port 8642 and Paperclip on port 3100. Flip an env var, restart, and they come up beside OpenCode.
+🧩 **Bundled Services** — Optional Hermes Agent on port 8642, Paperclip on port 3100, and CLIProxyAPI sidecar support in the full Compose profile. Flip an env var, restart, and they come up beside OpenCode.
 
 🤝 **10+ AI Providers** — Anthropic, OpenAI, Gemini, Groq, AWS Bedrock, Azure OpenAI, Vertex AI, GitHub Models, Ollama, and any OpenAI-compatible endpoint.
 
@@ -58,7 +58,7 @@ That's it. Open your browser and start building.
 
 💾 **Persistent State** — One bind mount. Sessions, settings, MCP configs, plugins all survive rebuilds.
 
-🔒 **Permissions** — UID/GID remapping via PUID/PGID. No credential proxying. Everything stays local.
+🔒 **Permissions** — UID/GID remapping via PUID/PGID. No credentials are baked into the image; optional integrations use the local env vars and mounts you configure.
 
 ## Environment Variables
 
@@ -74,11 +74,17 @@ That's it. Open your browser and start building.
 | `ENABLE_PAPERCLIP` | Start the Paperclip dashboard |
 | `PAPERCLIP_DEPLOYMENT_MODE` | Keep Paperclip in Docker-safe authenticated mode |
 | `ENABLE_HERMES` | Start Hermes API + messaging bridge |
+| `CLIPROXYAPI_ENABLED` | Add optional OpenCode `cliproxyapi` provider for a CLIProxyAPI sidecar |
+| `CLIPROXYAPI_BASE_URL` | CLIProxyAPI base URL, usually `http://cliproxyapi:8317/v1` in full Compose |
+| `CLIPROXYAPI_API_KEY` | Optional CLIProxyAPI API key env reference |
+| `CLIPROXYAPI_MODEL` | Optional model key exposed as `cliproxyapi/<model>` |
 | `OPENCODE_SERVER_PASSWORD` | Protect web UI with basic auth |
 
 Paperclip defaults to `authenticated` mode inside HolyCode so it can bind to `0.0.0.0` and still pass upstream doctor checks in Docker.
 
 Hermes exposes an API service. A `404` from `/` is normal as long as the process is healthy and port `8642` is listening.
+
+CLIProxyAPI support is disabled by default and lives in the full Compose profile. It adds a separate `cliproxyapi` provider without changing `ENABLE_CLAUDE_AUTH`, `opencode-claude-auth`, or `/home/opencode/.claude`.
 
 ## Links
 

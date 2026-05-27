@@ -4,6 +4,21 @@ All notable changes to HolyCode will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.7] - 05/27/2026
+
+### Added
+
+- Add optional CLIProxyAPI sidecar support in the full Docker Compose reference
+- Add runtime OpenCode `cliproxyapi` provider wiring behind `CLIPROXYAPI_ENABLED`
+
+### Changed
+
+- Document CLIProxyAPI setup, environment variables, and isolated local-cache state paths in English docs
+
+### Fixed
+
+- Keep CLIProxyAPI configuration isolated from `ENABLE_CLAUDE_AUTH`, `opencode-claude-auth`, and Claude credential paths
+
 ## [1.0.6] - 05/27/2026
 
 ### Added

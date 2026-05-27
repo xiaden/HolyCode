@@ -336,6 +336,14 @@ services:
       # - ENABLE_OH_MY_OPENAGENT=true
 ```
 
+For the optional CLIProxyAPI sidecar, use the shipped `docker-compose.full.yaml` profile instead of the quick-start compose:
+
+```bash
+docker compose -f docker-compose.full.yaml --profile cliproxyapi up -d
+```
+
+HolyCode reaches that sidecar at `http://cliproxyapi:8317/v1` inside the Compose network. The sidecar is disabled by default and does not replace Claude Auth.
+
 <p align="right">
   <a href="#top">back to top</a>
 </p>
@@ -378,6 +386,11 @@ services:
 | `PAPERCLIP_DEPLOYMENT_MODE` | `authenticated` | Docker-safe Paperclip startup mode; HolyCode defaults this away from `local_trusted` |
 | `ENABLE_HERMES` | (none) | Set to `true` to start Hermes as a bundled meta-agent API |
 | `HERMES_PORT` | `8642` | Override the container port used by Hermes |
+| `CLIPROXYAPI_ENABLED` | (none) | Set to `true` to add the optional OpenCode `cliproxyapi` provider |
+| `CLIPROXYAPI_BASE_URL` | `http://cliproxyapi:8317/v1` | CLIProxyAPI OpenAI-compatible base URL from the HolyCode container |
+| `CLIPROXYAPI_API_KEY` | (none) | Optional API key for CLIProxyAPI, stored only as an OpenCode env reference when set |
+| `CLIPROXYAPI_MODEL` | (none) | Optional primary model key exposed as `cliproxyapi/<model>` |
+| `CLIPROXYAPI_SMALL_MODEL` | (none) | Optional smaller/faster model key exposed as `cliproxyapi/<model>` |
 | `HOLYCODE_PLUGIN_UPDATE` | `manual` | Plugin update mode: `manual` (install if missing) or `auto` (install and update on boot) |
 
 > Plugin toggles (`ENABLE_CLAUDE_AUTH`, `ENABLE_OH_MY_OPENAGENT`) take effect on container restart. Set the env var and run `docker compose down && up -d`.
@@ -395,6 +408,10 @@ services:
 > `ENABLE_HERMES=true` starts Hermes on port `8642` inside the container. Hermes persists under `~/.hermes`, uses the already-installed `opencode` binary, and can expose an OpenAI-compatible API while delegating code work back into HolyCode.
 
 > Hermes is an API service, not a landing page. A `404` at `http://localhost:8642/` is expected. The important signal is that the port is listening and the process stays healthy.
+
+> `CLIPROXYAPI_ENABLED=true` adds a separate OpenCode provider named `cliproxyapi`. It does not change `ENABLE_CLAUDE_AUTH`, does not touch `/home/opencode/.claude`, and does not set global `ANTHROPIC_*` proxy variables. When using the full-compose sidecar, keep `CLIPROXYAPI_BASE_URL=http://cliproxyapi:8317/v1`.
+
+> CLIProxyAPI sidecar state lives under `./local-cache/cliproxyapi-config`, `./local-cache/cliproxyapi-auth`, and `./local-cache/cliproxyapi-logs`. The API port `8317` is not published to the host by default; uncomment loopback-only host publishing in `docker-compose.full.yaml` only when you need local setup/admin access.
 
 > `GIT_USER_NAME` and `GIT_USER_EMAIL` are only applied on first boot. To re-apply, delete the sentinel file and restart: `docker exec holycode rm /home/opencode/.config/opencode/.holycode-bootstrapped` then `docker compose restart`.
 
@@ -482,6 +499,7 @@ Includes Liberation, DejaVu, Noto, and Noto Color Emoji fonts for correct page r
 |---------|---------|
 | Hermes Agent | Self-improving meta-agent with MCP, messaging adapters, and OpenCode delegation |
 | Paperclip | Local agent board that hires OpenCode workers and wakes them on heartbeat |
+| CLIProxyAPI sidecar | Optional full-compose profile for centralized OpenAI-compatible account/model routing |
 | Claude Code CLI | Installed for Claude subscription auth flows via `ENABLE_CLAUDE_AUTH` |
 
 </details>
@@ -506,10 +524,11 @@ s6-overlay supervises OpenCode and Xvfb. If a process crashes, it restarts autom
 
 ## 🧩 Bundled Services
 
-HolyCode now ships with two optional layers on top of OpenCode. You do **not** need them to use the container. But if plain OpenCode gives you the hands, these two give you a brain and a control room.
+HolyCode now ships with three optional layers on top of OpenCode. You do **not** need them to use the container. But if plain OpenCode gives you the hands, these add coordination, a control room, and centralized model routing.
 
 - **Hermes Agent** is for when you want a smarter coordinator sitting above OpenCode.
 - **Paperclip** is for when you want a board, a workflow, and actual agent management instead of just one-off prompts.
+- **CLIProxyAPI** is for when you want one OpenAI-compatible endpoint that can route models/accounts through a separate sidecar.
 
 Flip the env var, restart the container, and the service comes up alongside the normal web UI.
 
@@ -560,6 +579,35 @@ environment:
 
 Paperclip state lives under `/home/opencode/.paperclip`. HolyCode bootstraps it in `authenticated` mode so Docker port publishing works cleanly. Open the dashboard, set up your company, and hire OpenCode-backed employees from there.
 
+### CLIProxyAPI
+
+CLIProxyAPI is the "model router" option. It runs as an optional sidecar from the full Compose reference and exposes an OpenAI-compatible API on port `8317` inside the Docker network. HolyCode can add a separate OpenCode provider named `cliproxyapi` that points at that sidecar.
+
+Why that matters:
+
+- **One provider surface.** OpenCode can use `cliproxyapi/<model>` while CLIProxyAPI handles the account/model routing behind it.
+- **Isolated from Claude Auth.** This does not replace `ENABLE_CLAUDE_AUTH`, does not touch `/home/opencode/.claude`, and does not set global Anthropic proxy variables.
+- **No default host exposure.** The sidecar is reachable by HolyCode over Docker DNS as `http://cliproxyapi:8317/v1`; host port publishing is loopback-only and commented out by default.
+- **Separate state.** Config, auth, and logs live under `./local-cache/cliproxyapi-*`, not under the OpenCode home or Claude credential folder.
+
+Turn it on with:
+
+```yaml
+environment:
+  - CLIPROXYAPI_ENABLED=true
+  - CLIPROXYAPI_BASE_URL=http://cliproxyapi:8317/v1
+  - CLIPROXYAPI_API_KEY=
+  - CLIPROXYAPI_MODEL=your-model-id
+```
+
+Then start the full Compose profile:
+
+```bash
+docker compose -f docker-compose.full.yaml --profile cliproxyapi up -d
+```
+
+Create `./local-cache/cliproxyapi-config/config.yaml` before enabling the profile. Put CLIProxyAPI API keys/OAuth state in its own mounted config/auth paths; do not reuse `/home/opencode/.claude`.
+
 <p align="right">
   <a href="#top">back to top</a>
 </p>
@@ -581,6 +629,7 @@ graph TD
     G --> I[opencode web :4096]
     G --> Q[Hermes API :8642]
     G --> R[Paperclip UI :3100]
+    A --> U[CLIProxyAPI sidecar :8317 internal]
     I --> J[Web UI]
     J --> K[Your Browser]
     I --> L[CLI Access]
@@ -590,9 +639,10 @@ graph TD
     M --> P[opencode attach localhost:4096]
     Q --> S[Meta-agent API clients]
     R --> T[Agent board and CEO invite]
+    I --> U
 ```
 
-The entrypoint handles user remapping, plugin toggles, optional bundled-service toggles, and first-boot setup. s6-overlay supervises Xvfb, the OpenCode web server, and any optional bundled services you enabled. If a supervised process crashes, s6 restarts it automatically. Access the web UI at port 4096, Hermes on 8642, or Paperclip on 3100 when those services are enabled.
+The entrypoint handles user remapping, plugin toggles, optional bundled-service toggles, CLIProxyAPI provider injection, and first-boot setup. s6-overlay supervises Xvfb, the OpenCode web server, and any optional bundled services you enabled inside the HolyCode container. The CLIProxyAPI sidecar is a separate Compose service. Access the web UI at port 4096, Hermes on 8642, or Paperclip on 3100 when those services are enabled.
 
 <p align="right">
   <a href="#top">back to top</a>
